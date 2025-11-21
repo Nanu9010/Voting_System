@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>Join BlockVote</h2>
+        <p class="auth-subtitle">Register as a voter and candidate (18+ only)</p>
+
+        {% if form.errors %}
+        <div class="form-errors">
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <div class="error">{{ error }}</div>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                <div class="error">{{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="POST" enctype="multipart/form-data" class="auth-form" id="registerForm">
+            {% csrf_token %}
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="{{ form.username.id_for_label }}">Username *</label>
+                    {{ form.username }}
+                    <small>Choose a unique username</small>
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.email.id_for_label }}">Email *</label>
+                    {{ form.email }}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="{{ form.password1.id_for_label }}">Password *</label>
+                    {{ form.password1 }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.password2.id_for_label }}">Confirm Password *</label>
+                    {{ form.password2 }}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="{{ form.full_name.id_for_label }}">Full Name *</label>
+                    {{ form.full_name }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.age.id_for_label }}">Age *</label>
+                    {{ form.age }}
+                    <small>Must be 18 or older</small>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="{{ form.phone.id_for_label }}">Phone *</label>
+                    {{ form.phone }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.ethereum_address.id_for_label }}">Ethereum Address *</label>
+                    <div style="display: flex; gap: 10px;">
+                        {{ form.ethereum_address }}
+                        <button type="button" onclick="connectWallet()" class="btn btn-secondary" style="white-space: nowrap;">
+                            Connect Wallet
+                        </button>
+                    </div>
+                    <small>Your Ethereum wallet address for blockchain transactions</small>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.address.id_for_label }}">Address *</label>
+                {{ form.address }}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.photo.id_for_label }}">Profile Photo</label>
+                {{ form.photo }}
+                <small>Optional: Upload your profile picture</small>
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.manifesto.id_for_label }}">Election Manifesto *</label>
+                {{ form.manifesto }}
+                <small>Tell voters about your vision and goals</small>
+            </div>
+
+            <div class="form-group checkbox-group">
+                <label for="{{ form.is_standing.id_for_label }}">
+                    {{ form.is_standing }}
+                    I want to stand for election as a candidate
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">Register</button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Already have an account? <a href="/login/">Login here</a></p>
+        </div>
+    </div>
+</div>
+
+<script>
+function connectWallet() {
+    if (typeof window.connectWallet === 'function') {
+        window.connectWallet();
+    } else {
+        alert('Wallet connection function not available. Please ensure MetaMask is installed.');
+    }
+}
+</script>
+{% endblock %}

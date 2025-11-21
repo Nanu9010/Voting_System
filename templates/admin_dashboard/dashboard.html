@@ -1,0 +1,146 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block extrahead %}
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  .badge { padding: 4px 8px; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; }
+  .on  { background: #28a745; }
+  .off { background: #dc3545; }
+  .log { font-size: 0.9em; color: #555; }
+  .btn-small { font-size: 0.8rem; padding: 4px 8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="module">
+  <h1>Admin Dashboard</h1>
+
+  <!-- Pending Applications -->
+  {% if pending_apps %}
+  <div class="module">
+    <h2>Pending Candidacy ({{ pending_apps|length }})</h2>
+    <table>
+      <tr><th>Candidate</th><th>Election</th><th>Actions</th></tr>
+      {% for a in pending_apps %}
+      <tr>
+        <td>{{ a.candidate.full_name }}</td>
+        <td>{{ a.election.title }}</td>
+        <td>
+          <button hx-post="{% url 'admin_approve_candidacy' a.id %}" hx-swap="none" class="btn-small">Approve</button>
+          <button hx-post="{% url 'admin_reject_candidacy' a.id %}" hx-swap="none" class="btn-small" style="background:#c33">Reject</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Elections -->
+  <div class="module">
+    <h2>Elections</h2>
+    <table id="elections">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Votes</th>
+          <th>Active</th>
+          <th>Candidacy</th>
+          <th>Voting</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in elections %}
+        <tr>
+          <td><strong>{{ e.title }}</strong></td>
+          <td>{{ e.vote_count }}</td>
+
+          <td>
+            <span class="badge {% if e.is_active %}on{% else %}off{% endif %}"
+                  hx-post="{% url 'admin_toggle_field' e.id 'is_active' %}"
+                  hx-vals='{"value": "{{ e.is_active|yesno:"false,true" }}"}'
+                  hx-swap="outerHTML">
+              {{ e.is_active|yesno:"ON,OFF" }}
+            </span>
+          </td>
+
+          <td>
+            <span class="badge {% if e.candidacy_registration_open %}on{% else %}off{% endif %}"
+                  hx-post="{% url 'admin_toggle_field' e.id 'candidacy_registration_open' %}"
+                  hx-vals='{"value": "{{ e.candidacy_registration_open|yesno:"false,true" }}"}'
+                  hx-swap="outerHTML">
+              {{ e.candidacy_registration_open|yesno:"OPEN,CLOSED" }}
+            </span>
+          </td>
+
+          <td>
+            <span class="badge {% if e.voting_open %}on{% else %}off{% endif %}"
+                  hx-post="{% url 'admin_toggle_field' e.id 'voting_open' %}"
+                  hx-vals='{"value": "{{ e.voting_open|yesno:"false,true" }}"}'
+                  hx-swap="outerHTML">
+              {{ e.voting_open|yesno:"OPEN,CLOSED" }}
+            </span>
+          </td>
+
+          <td>
+            <button onclick="showResults({{ e.id }})" class="btn-small">Results</button>
+            <button hx-post="{% url 'admin_force_end' e.id %}" hx-swap="none" class="btn-small" style="background:#dc3545">End Now</button>
+            <a href="{% url 'admin_export_csv' e.id %}" class="btn-small">CSV</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Audit Log -->
+  <div class="module">
+    <h2>Recent Actions</h2>
+    <ul>
+      {% for l in recent_logs %}
+      <li class="log">{{ l.timestamp|date:"M d H:i" }} – {{ l.user }} – {{ l.action }} {% if l.election %}({{ l.election }}){% endif %}</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <!-- Results Modal -->
+  <div id="results-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:9999; padding:20px;">
+    <div style="background:white; margin:50px auto; max-width:800px; padding:20px; border-radius:8px;">
+      <h2 id="modal-title"></h2>
+      <canvas id="chart" height="300"></canvas>
+      <button onclick="document.getElementById('results-modal').style.display='none'" style="margin-top:15px;">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let chart;
+function showResults(id) {
+  fetch(`/admin/election/${id}/results/`)
+    .then(r => r.text())
+    .then(html => {
+      const modal = document.getElementById('results-modal');
+      modal.innerHTML = html;
+      modal.style.display = 'block';
+      loadChart(id);
+    });
+}
+function loadChart(id) {
+  fetch(`/api/election-results/${id}/`)
+    .then(r => r.json())
+    .then(d => {
+      const ctx = document.getElementById('chart').getContext('2d');
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: d.labels, datasets: [{ label: 'Votes', data: d.votes, backgroundColor: '#007bff' }] },
+        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+      });
+    });
+}
+</script>
+{% endblock %}

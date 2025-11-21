@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="results-header">
+        <h1>Election Results: {{ election.title }}</h1>
+        <p class="subtitle">Live voting results from the blockchain</p>
+        
+        <div class="results-meta">
+            <div>
+                <strong>Total Votes:</strong> {{ total_votes }}
+            </div>
+            <div>
+                <strong>Candidates:</strong> {{ candidates|length }}
+            </div>
+            <div>
+                <strong>Status:</strong> 
+                {% if election.is_active %}
+                    <span class="badge badge-success">Active</span>
+                {% else %}
+                    <span class="badge badge-secondary">Ended</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Winner Announcement -->
+    {% if candidates %}
+    <div class="winner-announcement">
+        <h2>🏆 Election Winner</h2>
+        <div class="winner-card">
+            {% with winner=candidates.0 %}
+            {% if winner.photo %}
+                <img src="{{ winner.photo.url }}" alt="{{ winner.full_name }}" class="winner-photo">
+            {% else %}
+                <div class="winner-photo-placeholder">
+                    {{ winner.full_name|first|upper }}
+                </div>
+            {% endif %}
+            <h3>{{ winner.full_name }}</h3>
+            <p class="vote-count">{{ winner.vote_count }} Votes</p>
+            <p><strong>Winning Percentage:</strong> 
+                {% widthratio winner.vote_count total_votes 100 %}%
+            </p>
+            {% endwith %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Results Visualization -->
+    <div class="results-visualization">
+        <h2>Vote Distribution</h2>
+        <div class="results-chart">
+            {% for candidate in candidates %}
+            <div class="candidate-result" style="margin: 1rem 0;">
+                <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="flex: 1;">
+                        {{ candidate.full_name }}
+                        {% if forloop.first %} 👑{% endif %}
+                    </span>
+                    <span style="margin: 0 1rem;">
+                        {{ candidate.vote_count }} votes
+                    </span>
+                    <span style="min-width: 60px; text-align: right;">
+                        {% widthratio candidate.vote_count total_votes 100 %}%
+                    </span>
+                </div>
+                <div class="vote-bar">
+                    <div class="vote-bar-fill" style="width: {% widthratio candidate.vote_count total_votes 100 %}%;"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Detailed Results Table -->
+    <div class="results-table-container">
+        <h2>Detailed Results</h2>
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Candidate</th>
+                    <th>Votes</th>
+                    <th>Percentage</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for candidate in candidates %}
+                <tr class="{% if forloop.first %}winner-row{% endif %}">
+                    <td>
+                        {% if forloop.first %}
+                            <span class="trophy">🏆</span>
+                        {% else %}
+                            {{ forloop.counter }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            {% if candidate.photo %}
+                                <img src="{{ candidate.photo.url }}" alt="{{ candidate.full_name }}" style="width: 40px; height: 40px; border-radius: 50%;">
+                            {% else %}
+                                <div style="width: 40px; height: 40px; border-radius: 50%; background: #2563eb; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                                    {{ candidate.full_name|first|upper }}
+                                </div>
+                            {% endif %}
+                            <div>
+                                <strong>{{ candidate.full_name }}</strong>
+                                <div style="font-size: 0.8rem; color: #666;">{{ candidate.age }} years old</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><strong>{{ candidate.vote_count }}</strong></td>
+                    <td>{% widthratio candidate.vote_count total_votes 100 %}%</td>
+                    <td>
+                        {% if forloop.first %}
+                            <span class="badge badge-success">Winner</span>
+                        {% else %}
+                            <span class="badge badge-secondary">Candidate</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Blockchain Verification -->
+    <div class="blockchain-info">
+        <h2>Blockchain Verification</h2>
+        <p>All votes are recorded on the Ethereum blockchain for transparency and security.</p>
+        
+        {% if election.blockchain_contract_address %}
+        <p><strong>Contract Address:</strong> <code>{{ election.blockchain_contract_address }}</code></p>
+        {% endif %}
+        
+        <p><strong>Total Transactions:</strong> {{ total_votes }}</p>
+        <p><strong>Last Updated:</strong> <span id="lastUpdated">{{ election.created_at }}</span></p>
+        
+        <div style="margin-top: 1rem;">
+            <button onclick="verifyOnBlockchain()" class="btn btn-primary">
+                Verify on Blockchain Explorer
+            </button>
+            <button onclick="downloadResults()" class="btn btn-secondary">
+                Download Results (CSV)
+            </button>
+        </div>
+    </div>
+
+    <!-- Back to Dashboard -->
+    <div style="text-align: center; margin: 3rem 0;">
+        <a href="/dashboard/" class="btn btn-primary">Back to Dashboard</a>
+        <a href="/" class="btn btn-secondary">Back to Home</a>
+    </div>
+</div>
+
+<script>
+function verifyOnBlockchain() {
+    alert('This would open a blockchain explorer to verify the transactions.');
+    // In a real implementation, this would link to Etherscan or similar
+}
+
+function downloadResults() {
+    // Simple CSV export implementation
+    const csvContent = [
+        ['Rank', 'Candidate', 'Votes', 'Percentage'],
+        {% for candidate in candidates %}
+        [
+            '{{ forloop.counter }}',
+            '{{ candidate.full_name }}',
+            '{{ candidate.vote_count }}',
+            '{% widthratio candidate.vote_count total_votes 100 %}%'
+        ],
+        {% endfor %}
+    ].map(row => row.join(',')).join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'election-results-{{ election.title }}-{{ election.id }}.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+// Update last updated time
+document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+
+// Animate vote bars
+document.addEventListener('DOMContentLoaded', function() {
+    const voteBars = document.querySelectorAll('.vote-bar-fill');
+    voteBars.forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => {
+            bar.style.width = width;
+        }, 500);
+    });
+});
+</script>
+{% endblock %}

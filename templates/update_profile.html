@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>Update Your Profile</h2>
+        <p class="auth-subtitle">Keep your information up to date</p>
+
+        {% if form.errors %}
+        <div class="form-errors">
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <div class="error">{{ error }}</div>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                <div class="error">{{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="POST" enctype="multipart/form-data" class="auth-form">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="{{ form.full_name.id_for_label }}">Full Name *</label>
+                {{ form.full_name }}
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="{{ form.age.id_for_label }}">Age *</label>
+                    {{ form.age }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.phone.id_for_label }}">Phone *</label>
+                    {{ form.phone }}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.email.id_for_label }}">Email *</label>
+                {{ form.email }}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.address.id_for_label }}">Address *</label>
+                {{ form.address }}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.photo.id_for_label }}">Profile Photo</label>
+                {% if candidate.photo %}
+                    <div>
+                        <img src="{{ candidate.photo.url }}" alt="Current photo" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; margin-bottom: 10px;">
+                    </div>
+                {% endif %}
+                {{ form.photo }}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.manifesto.id_for_label }}">Manifesto *</label>
+                {{ form.manifesto }}
+                <small>Tell voters about your vision and goals (this will be used if you apply for candidacy)</small>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" class="btn btn-primary">Update Profile</button>
+                <a href="/dashboard/" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

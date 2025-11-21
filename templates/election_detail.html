@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="election-header" style="text-align: center; margin-bottom: 3rem;">
+        <h1>{{ election.title }}</h1>
+        <p class="subtitle">{{ election.description }}</p>
+        
+        <div class="election-meta" style="display: flex; gap: 2rem; justify-content: center; margin: 1rem 0;">
+            <div>
+                <strong>Start:</strong> {{ election.start_date }}
+            </div>
+            <div>
+                <strong>End:</strong> {{ election.end_date }}
+            </div>
+            <div>
+                <strong>Hours:</strong> {{ election.voting_start_time }} - {{ election.voting_end_time }}
+            </div>
+        </div>
+
+        <div class="voting-status-banner">
+            {% if has_voted %}
+                <div class="alert alert-success">
+                    ✅ You have already voted in this election.
+                </div>
+            {% elif is_voting_time %}
+                <div class="alert alert-success">
+                    🟢 Voting is currently OPEN! You can cast your vote.
+                </div>
+            {% else %}
+                <div class="alert alert-warning">
+                    🔴 Voting is currently CLOSED. Voting hours: 9 AM - 5 PM.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="candidates-section">
+        <h2 style="text-align: center; margin-bottom: 2rem;">Candidates</h2>
+        
+        {% if candidates %}
+        <div class="candidates-grid">
+            {% for candidate in candidates %}
+            <div class="candidate-card" id="candidate-{{ candidate.id }}">
+                {% if candidate.photo %}
+                    <img src="{{ candidate.photo.url }}" alt="{{ candidate.full_name }}" class="candidate-photo">
+                {% else %}
+                    <div class="candidate-photo-placeholder">
+                        {{ candidate.full_name|first|upper }}
+                    </div>
+                {% endif %}
+                
+                <h3>{{ candidate.full_name }}</h3>
+                <p><strong>Age:</strong> {{ candidate.age }}</p>
+                
+                <div class="candidate-manifesto">
+                    <h4>Manifesto:</h4>
+                    <p>{{ candidate.manifesto }}</p>
+                </div>
+                
+                <div class="candidate-votes">
+                    <strong>Votes:</strong> {{ candidate.vote_count }}
+                </div>
+
+                {% if not has_voted and is_voting_time and candidate.id != current_candidate.id %}
+                <button 
+                    onclick="voteForCandidate({{ election.id }}, {{ candidate.id }}, '{{ candidate.full_name }}')" 
+                    class="btn btn-primary btn-block"
+                    {% if has_voted %}disabled{% endif %}
+                >
+                    Vote for {{ candidate.full_name }}
+                </button>
+                {% elif candidate.id == current_candidate.id %}
+                <button class="btn btn-secondary btn-block" disabled>
+                    This is You
+                </button>
+                {% elif has_voted %}
+                <button class="btn btn-secondary btn-block" disabled>
+                    Already Voted
+                </button>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+
+
+        <!-- Add this section near the candidate cards -->
+        {% if not current_candidate.is_approved and not has_pending_application and election.candidacy_registration_open %}
+        <div class="candidacy-application-banner" style="background: #e3f2fd; padding: 1.5rem; border-radius: 8px; margin: 2rem 0; text-align: center;">
+            <h3>Interested in Standing for Election?</h3>
+            <p>Apply now to become a candidate in this election. Your application will be reviewed by the admin team.</p>
+            <a href="/election/{{ election.id }}/apply/" class="btn btn-success">Apply for Candidacy</a>
+        </div>
+        {% elif has_pending_application %}
+        <div class="pending-application-banner" style="background: #fff3cd; padding: 1.5rem; border-radius: 8px; margin: 2rem 0; text-align: center;">
+            <h3>📋 Application Pending Review</h3>
+            <p>Your candidacy application for this election is under review by the admin team.</p>
+        </div>
+        {% endif %}
+
+
+
+        <div class="no-candidates" style="text-align: center; padding: 3rem;">
+            <h3>No candidates are standing for this election yet.</h3>
+            <p>Be the first to stand for election!</p>
+            <a href="/dashboard/" class="btn btn-primary">Go to Dashboard</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Voting Modal -->
+    <div id="votingModal" class="modal">
+        <div class="modal-content">
+            <h2>Confirm Your Vote</h2>
+            <p>You are about to vote for: <strong id="candidateName"></strong></p>
+            <p>This action will be recorded on the Ethereum blockchain and cannot be undone.</p>
+            
+            <div class="blockchain-info" style="margin: 1rem 0; padding: 1rem; background: #f8fafc; border-radius: 8px;">
+                <p><strong>Transaction will include:</strong></p>
+                <ul>
+                    <li>Your wallet address: {{ current_candidate.ethereum_address }}</li>
+                    <li>Election: {{ election.title }}</li>
+                    <li>Timestamp: <span id="currentTime"></span></li>
+                </ul>
+            </div>
+
+            <div class="modal-actions">
+                <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="confirmVote()" class="btn btn-primary" id="confirmVoteBtn">
+                    Confirm Vote
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentElectionId = null;
+let currentCandidateId = null;
+let currentCandidateName = null;
+
+function voteForCandidate(electionId, candidateId, candidateName) {
+    currentElectionId = electionId;
+    currentCandidateId = candidateId;
+    currentCandidateName = candidateName;
+    
+    document.getElementById('candidateName').textContent = candidateName;
+    document.getElementById('currentTime').textContent = new Date().toLocaleString();
+    
+    document.getElementById('votingModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('votingModal').style.display = 'none';
+}
+
+async function confirmVote() {
+    const confirmBtn = document.getElementById('confirmVoteBtn');
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Processing...';
+
+    try {
+        // Simulate blockchain transaction
+        const transactionHash = '0x' + Math.random().toString(16).substr(2, 64);
+        
+        const response = await fetch('/record-vote/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                election_id: currentElectionId,
+                candidate_id: currentCandidateId,
+                transaction_hash: transactionHash
+            })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ Vote recorded successfully! Transaction: ' + transactionHash);
+            location.reload();
+        } else {
+            alert('❌ Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('❌ Network error: ' + error.message);
+    } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Confirm Vote';
+        closeModal();
+    }
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('votingModal');
+    if (event.target === modal) {
+        closeModal();
+    }
+}
+</script>
+{% endblock %}

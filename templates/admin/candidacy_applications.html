@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="dashboard-header">
+        <h1>📋 Candidacy Applications</h1>
+        <p class="subtitle">Review and manage candidate applications</p>
+    </div>
+
+    <!-- Pending Applications -->
+    <div class="dashboard-card">
+        <h2>⏳ Pending Applications ({{ pending_applications|length }})</h2>
+        
+        {% if pending_applications %}
+        <div class="applications-list">
+            {% for application in pending_applications %}
+            <div class="application-item" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.5rem; margin: 1rem 0;">
+                <div style="display: flex; justify-content: between; align-items: start;">
+                    <div style="flex: 1;">
+                        <h4>{{ application.candidate.full_name }}</h4>
+                        <p><strong>Election:</strong> {{ application.election.title }}</p>
+                        <p><strong>Applied:</strong> {{ application.applied_at|date:"M d, Y H:i" }}</p>
+                        <p><strong>Age:</strong> {{ application.candidate.age }} | <strong>Email:</strong> {{ application.candidate.email }}</p>
+                        
+                        <div style="margin: 1rem 0;">
+                            <strong>Application Statement:</strong>
+                            <p style="background: #f8fafc; padding: 1rem; border-radius: 4px; margin: 0.5rem 0;">
+                                {{ application.application_text|linebreaks }}
+                            </p>
+                        </div>
+                        
+                        <div style="margin: 1rem 0;">
+                            <strong>Candidate Manifesto:</strong>
+                            <p style="background: #f8fafc; padding: 1rem; border-radius: 4px; margin: 0.5rem 0;">
+                                {{ application.candidate.manifesto|linebreaks }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 10px; min-width: 200px;">
+                        <form method="POST" action="/admin/approve-candidacy/{{ application.id }}/" style="margin: 0;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success btn-block">✓ Approve</button>
+                        </form>
+                        
+                        <form method="POST" action="/admin/reject-candidacy/{{ application.id }}/" style="margin: 0;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-block">✗ Reject</button>
+                        </form>
+                        
+                        <a href="/election/{{ application.election.id }}/" class="btn btn-secondary btn-block">View Election</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="no-applications">No pending applications.</p>
+        {% endif %}
+    </div>
+
+    <!-- Approved Applications -->
+    <div class="dashboard-card">
+        <h2>✅ Approved Applications ({{ approved_applications|length }})</h2>
+        
+        {% if approved_applications %}
+        <div class="applications-list">
+            {% for application in approved_applications %}
+            <div class="application-item" style="border-left: 4px solid #10b981; background: #f0fdf4; border-radius: 8px; padding: 1rem; margin: 0.5rem 0;">
+                <strong>{{ application.candidate.full_name }}</strong> - {{ application.election.title }}
+                <br>
+                <small>Approved by {{ application.reviewed_by.username }} on {{ application.reviewed_at|date:"M d, Y" }}</small>
+                {% if application.review_notes %}
+                <br>
+                <small><strong>Notes:</strong> {{ application.review_notes }}</small>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="no-applications">No approved applications.</p>
+        {% endif %}
+    </div>
+
+    <!-- Rejected Applications -->
+    <div class="dashboard-card">
+        <h2>❌ Rejected Applications ({{ rejected_applications|length }})</h2>
+        
+        {% if rejected_applications %}
+        <div class="applications-list">
+            {% for application in rejected_applications %}
+            <div class="application-item" style="border-left: 4px solid #ef4444; background: #fef2f2; border-radius: 8px; padding: 1rem; margin: 0.5rem 0;">
+                <strong>{{ application.candidate.full_name }}</strong> - {{ application.election.title }}
+                <br>
+                <small>Rejected by {{ application.reviewed_by.username }} on {{ application.reviewed_at|date:"M d, Y" }}</small>
+                {% if application.review_notes %}
+                <br>
+                <small><strong>Reason:</strong> {{ application.review_notes }}</small>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="no-applications">No rejected applications.</p>
+        {% endif %}
+    </div>
+
+    <div style="text-align: center; margin: 2rem 0;">
+        <a href="/admin/" class="btn btn-primary">Back to Admin Panel</a>
+        <a href="/dashboard/" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

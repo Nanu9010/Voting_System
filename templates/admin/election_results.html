@@ -1,0 +1,25 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>Results – {{ election.title }}</h1>
+<p><strong>Total votes:</strong> {{ total }}</p>
+<table class="table">
+  <thead><tr><th>Candidate</th><th>Votes</th></tr></thead>
+  <tbody>
+    {% for c in candidates %}
+    <tr>
+      <td>{{ c.full_name }}</td>
+      <td>{{ c.vote_count }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="2">No approved candidates.</td></tr>
+    {% endfor %}
+  </tbody>
+
+  <!-- templates/admin/election_results.html -->
+<h2>Results: {{ election.title }}</h2>
+<canvas id="results-chart" height="300"></canvas>
+
+
+</table>
+<a href="{% url 'admin:voting_app_election_changelist' %}" class="button">Back to Elections</a>
+{% endblock %}

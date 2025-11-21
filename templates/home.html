@@ -1,0 +1,100 @@
+
+<!-- templates/home.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="hero">
+    <div class="container">
+        <h1>Secure & Transparent Voting on Blockchain</h1>
+        <p class="hero-subtitle">Vote with confidence using Ethereum blockchain technology</p>
+        <div class="hero-buttons">
+            {% if user.is_authenticated %}
+                <a href="/dashboard/" class="btn btn-primary">Go to Dashboard</a>
+            {% else %}
+                <a href="/register/" class="btn btn-primary">Register to Vote</a>
+                <a href="/login/" class="btn btn-secondary">Login</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <section class="features">
+        <h2>Why BlockVote?</h2>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Secure</h3>
+                <p>Votes are recorded on the Ethereum blockchain, ensuring immutability and security.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">👁️</div>
+                <h3>Transparent</h3>
+                <p>All transactions are verifiable on the blockchain while maintaining voter privacy.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>Efficient</h3>
+                <p>Instant vote counting and real-time results without manual intervention.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🌐</div>
+                <h3>Decentralized</h3>
+                <p>No central authority controls the voting process, ensuring fairness.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="elections-section">
+        <h2>Active Elections</h2>
+        {% if elections %}
+            <div class="election-grid">
+                {% for election in elections %}
+                <div class="election-card">
+                    <h3>{{ election.title }}</h3>
+                    <p>{{ election.description }}</p>
+                    <div class="election-dates">
+                        <p><strong>Start:</strong> {{ election.start_date }}</p>
+                        <p><strong>End:</strong> {{ election.end_date }}</p>
+                        <p><strong>Voting Hours:</strong> {{ election.voting_start_time }} - {{ election.voting_end_time }}</p>
+                    </div>
+                    {% if user.is_authenticated %}
+                        <a href="/election/{{ election.id }}/" class="btn btn-primary">View Election</a>
+                    {% else %}
+                        <a href="/login/" class="btn btn-secondary">Login to Vote</a>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="no-elections">No active elections at the moment.</p>
+        {% endif %}
+    </section>
+
+    <section class="how-it-works">
+        <h2>How It Works</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>Register</h3>
+                <p>Create your account with your Ethereum wallet address (18+ only)</p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>Stand or Vote</h3>
+                <p>Choose to stand as a candidate or vote for your preferred candidate</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>Blockchain Verification</h3>
+                <p>Your vote is recorded on the Ethereum blockchain with a unique transaction hash</p>
+            </div>
+            <div class="step">
+                <div class="step-number">4</div>
+                <h3>View Results</h3>
+                <p>Check real-time results and verify votes on the blockchain</p>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

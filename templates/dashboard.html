@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="dashboard-header">
+        <h1>Welcome, {{ candidate.full_name }}! 👋</h1>
+        <p class="subtitle">Your voting dashboard</p>
+    </div>
+
+    <div class="dashboard-grid">
+        <!-- Profile Section -->
+        <div class="dashboard-card">
+            <h2>Your Profile</h2>
+            {% if candidate.photo %}
+                <img src="{{ candidate.photo.url }}" alt="{{ candidate.full_name }}" class="profile-photo">
+            {% else %}
+                <div class="profile-photo-placeholder">
+                    {{ candidate.full_name|first|upper }}
+                </div>
+            {% endif %}
+            
+            <div class="profile-info">
+                <p><strong>Name:</strong> {{ candidate.full_name }}</p>
+                <p><strong>Age:</strong> {{ candidate.age }}</p>
+                <p><strong>Email:</strong> {{ candidate.email }}</p>
+                <p><strong>Phone:</strong> {{ candidate.phone }}</p>
+                <p><strong>Candidacy Status:</strong> 
+                    <span class="badge 
+                        {% if candidate.is_approved %}badge-success
+                        {% elif candidate.applied_for_candidacy %}badge-warning
+                        {% else %}badge-secondary{% endif %}">
+                        {% if candidate.is_approved %}Approved Candidate
+                        {% elif candidate.applied_for_candidacy %}Pending Approval
+                        {% else %}Not Applied
+                        {% endif %}
+                    </span>
+                </p>
+                <p><strong>Wallet:</strong> 
+                    <span class="wallet-address">{{ candidate.ethereum_address }}</span>
+                </p>
+            </div>
+
+            <div class="manifesto-section">
+                <h3>Your Manifesto</h3>
+                <p>{{ candidate.manifesto|linebreaks }}</p>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 1rem;">
+                <a href="/profile/update/" class="btn btn-primary">Update Profile</a>
+                {% if not candidate.is_approved and not candidate.applied_for_candidacy %}
+                    <a href="#apply-candidacy" class="btn btn-success">Apply for Candidacy</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Elections & Stats Section -->
+        <div class="dashboard-card">
+            <h2>Election Statistics</h2>
+            
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number">{{ candidate.vote_count }}</div>
+                    <div class="stat-label">Votes Received</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">
+                        {% if candidate.has_voted %}1{% else %}0{% endif %}
+                    </div>
+                    <div class="stat-label">Votes Cast</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">
+                        {% if candidate.is_approved %}Approved{% else %}Voter{% endif %}
+                    </div>
+                    <div class="stat-label">Your Role</div>
+                </div>
+            </div>
+
+            <!-- Pending Applications -->
+            {% if pending_applications %}
+            <div class="pending-applications" style="margin: 1rem 0; padding: 1rem; background: #fff3cd; border-radius: 8px;">
+                <h4>📋 Pending Applications</h4>
+                {% for application in pending_applications %}
+                <div style="margin: 0.5rem 0; padding: 0.5rem; background: white; border-radius: 4px;">
+                    <strong>{{ application.election.title }}</strong>
+                    <br>
+                    <small>Applied: {{ application.applied_at|date:"M d, Y" }}</small>
+                    <span class="badge badge-warning" style="float: right;">Pending Review</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="election-list">
+                <h3>Active Elections</h3>
+                {% if elections %}
+                    {% for election in elections %}
+                    <div class="election-item">
+                        <div class="election-info">
+                            <h4>{{ election.title }}</h4>
+                            <p>{{ election.description|truncatewords:20 }}</p>
+                            <div class="election-meta">
+                                <span>🗓️ {{ election.start_date }} to {{ election.end_date }}</span>
+                                <span>🕘 {{ election.voting_start_time }} - {{ election.voting_end_time }}</span>
+                            </div>
+                            <div class="election-status">
+                                <span class="badge {% if election.candidacy_registration_open %}badge-success{% else %}badge-secondary{% endif %}">
+                                    Candidacy: {% if election.candidacy_registration_open %}Open{% else %}Closed{% endif %}
+                                </span>
+                                <span class="badge {% if election.voting_open %}badge-success{% else %}badge-secondary{% endif %}">
+                                    Voting: {% if election.voting_open %}Open{% else %}Closed{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="election-actions">
+                            <a href="/election/{{ election.id }}/" class="btn btn-primary">
+                                {% if candidate.is_approved %}View{% else %}Vote{% endif %}
+                            </a>
+                            <a href="/results/{{ election.id }}/" class="btn btn-secondary">Results</a>
+                            {% if election.candidacy_registration_open and not candidate.is_approved and not candidate.applied_for_candidacy %}
+                                <a href="/election/{{ election.id }}/apply/" class="btn btn-success">Apply</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="no-elections">No active elections at the moment.</p>
+                {% endif %}
+            </div>
+
+            <!-- Voting Status -->
+            <div class="voting-status" style="margin-top: 2rem; padding: 1rem; background: #f8fafc; border-radius: 8px;">
+                <h4>Current Voting Status</h4>
+                <div data-voting-status class="badge badge-secondary">
+                    Checking...
+                </div>
+                <p style="margin-top: 0.5rem; font-size: 0.9rem;">
+                    Voting is only allowed between 9 AM and 5 PM on election days.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Apply for Candidacy Section -->
+    {% if not candidate.is_approved and not candidate.applied_for_candidacy %}
+    <div id="apply-candidacy" class="dashboard-card" style="margin-top: 2rem;">
+        <h2>Apply for Candidacy</h2>
+        <p>Want to stand for election? Apply now and our admin team will review your application.</p>
+        
+        <div class="election-list">
+            {% for election in elections %}
+                {% if election.candidacy_registration_open %}
+                <div class="election-item">
+                    <div class="election-info">
+                        <h4>{{ election.title }}</h4>
+                        <p>{{ election.description }}</p>
+                    </div>
+                    <div class="election-actions">
+                        <a href="/election/{{ election.id }}/apply/" class="btn btn-success">Apply Now</a>
+                    </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        
+        {% if not elections or not elections|length %}
+            <p class="no-elections">No elections are currently accepting candidacy applications.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Blockchain Info -->
+    <div class="dashboard-card" style="margin-top: 2rem;">
+        <h2>Blockchain Information</h2>
+        <div class="blockchain-info">
+            <p><strong>Connected Wallet:</strong> <code>{{ candidate.ethereum_address }}</code></p>
+            <p><strong>Network:</strong> <span id="networkStatus">Checking...</span></p>
+            <p><strong>Voting Transactions:</strong> 
+                {% if candidate.has_voted %}
+                    <span class="badge badge-success">Vote Recorded on Blockchain</span>
+                {% else %}
+                    <span class="badge badge-secondary">No Votes Cast Yet</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize blockchain connection
+    if (typeof initWeb3 === 'function') {
+        initWeb3().then(connected => {
+            if (connected) {
+                document.getElementById('networkStatus').textContent = 'Connected';
+                document.getElementById('networkStatus').className = 'badge badge-success';
+            } else {
+                document.getElementById('networkStatus').textContent = 'Not Connected';
+                document.getElementById('networkStatus').className = 'badge badge-danger';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
